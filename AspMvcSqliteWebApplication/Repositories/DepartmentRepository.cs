@@ -1,6 +1,9 @@
-﻿using AspMvcSqliteWebApplication.DatabaseContexts;
+﻿using System;
+using System.Data;
+using AspMvcSqliteWebApplication.DatabaseContexts;
 using AspMvcSqliteWebApplication.Entities;
 using AspMvcSqliteWebApplication.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspMvcSqliteWebApplication.Repositories
@@ -18,6 +21,38 @@ namespace AspMvcSqliteWebApplication.Repositories
 
         public async Task<IEnumerable<Department>> GetAll()
         {
+            if (await dbSet.AnyAsync() == false)
+            {
+                DataTable dataTable = new DataTable();
+                dataTable.Columns.Add("Name", typeof(string));
+                dataTable.Columns.Add("Location", typeof(string));
+                for (int i = 0; i < 100000; i++)
+                {
+                    dataTable.Rows.Add("Dep Name" + i, "Dep Name" + i);
+                }
+
+                // SqlBulkCopy only works with SQL Server.
+                // SQLite cannot work with SqlBulkCopy.
+                /*
+                using SqlBulkCopy bulkCopy = new SqlBulkCopy(connection);
+                bulkCopy.DestinationTableName = "Department";
+                await bulkCopy.WriteToServerAsync(dataTable);
+                */
+
+
+                // option - 2
+
+                var departments = new List<Department>();
+                for (int i = 1; i <= 100000; i++)
+                {
+                    departments.Add(new Department { Name = $"Employee {i}", Location = "Location " + i });
+                }
+
+                // Bulk insert 100k rows in SQLite
+                //await context.BulkInsertAsync(departments);
+
+                context.ChangeTracker.AutoDetectChangesEnabled = false;
+            }
             return await dbSet.ToListAsync();
         }
 
